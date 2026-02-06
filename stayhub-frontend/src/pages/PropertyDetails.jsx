@@ -28,6 +28,16 @@ const PropertyDetails = () => {
   const [newRating, setNewRating] = useState(0);
   const [newComment, setNewComment] = useState('');
 
+  // category ratings
+  const [cleanliness, setCleanliness] = useState(0);
+  const [accuracy, setAccuracy] = useState(0);
+  const [communication, setCommunication] = useState(0);
+  const [locationScore, setLocationScore] = useState(0);
+  const [valueScore, setValueScore] = useState(0);
+
+  // sort state
+  const [sortBy, setSortBy] = useState('newest'); // 'newest' | 'highest' | 'lowest'
+
   useEffect(() => {
     fetchPropertyDetails();
     fetchReviews();
@@ -111,6 +121,45 @@ const PropertyDetails = () => {
     }
   };
 
+  const handleSubmitReview = async () => {
+    if (
+      !newRating ||
+      !cleanliness ||
+      !accuracy ||
+      !communication ||
+      !locationScore ||
+      !valueScore ||
+      !newComment.trim()
+    ) {
+      return;
+    }
+
+    try {
+      const { data } = await reviewAPI.create(id, {
+        rating: newRating,
+        cleanliness,
+        accuracy,
+        communication,
+        locationScore,
+        value: valueScore,
+        comment: newComment,
+      });
+
+      setReviews((prev) => [data, ...prev]);
+      setNewRating(0);
+      setNewComment('');
+      setCleanliness(0);
+      setAccuracy(0);
+      setCommunication(0);
+      setLocationScore(0);
+      setValueScore(0);
+      setShowReviewForm(false);
+    } catch (err) {
+      console.error('Review error:', err);
+      alert('Could not submit review. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -122,8 +171,13 @@ const PropertyDetails = () => {
   if (!property) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">Property Not Found</h1>
-        <button onClick={() => navigate('/properties')} className="text-primary underline">
+        <h1 className="text-3xl font-bold text-gray-800 mb-4">
+          Property Not Found
+        </h1>
+        <button
+          onClick={() => navigate('/properties')}
+          className="text-primary underline"
+        >
           Back to listings
         </button>
       </div>
@@ -135,16 +189,53 @@ const PropertyDetails = () => {
       ? Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
       : 0;
 
+  const averageRating =
+    reviews.length > 0
+      ? (
+          reviews.reduce(
+            (sum, r) => sum + (Number(r.rating) || 0),
+            0
+          ) / reviews.length
+        ).toFixed(1)
+      : null;
+
+  const avg = (arr) =>
+    arr.length
+      ? (
+          arr.reduce((sum, n) => sum + (Number(n) || 0), 0) / arr.length
+        ).toFixed(1)
+      : null;
+
+  const avgCleanliness = avg(reviews.map((r) => r.cleanliness));
+  const avgAccuracy = avg(reviews.map((r) => r.accuracy));
+  const avgCommunication = avg(reviews.map((r) => r.communication));
+  const avgLocationScore = avg(reviews.map((r) => r.locationScore));
+  const avgValue = avg(reviews.map((r) => r.value));
+
+  // sorted reviews for display
+  const sortedReviews = [...reviews].sort((a, b) => {
+    if (sortBy === 'highest') {
+      return (b.rating || 0) - (a.rating || 0);
+    }
+    if (sortBy === 'lowest') {
+      return (a.rating || 0) - (b.rating || 0);
+    }
+    // newest
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">{property.title}</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2">
+          {property.title}
+        </h1>
         <div className="flex flex-wrap items-center gap-4 text-gray-600">
           <div className="flex items-center gap-1">
             <FaStar className="text-yellow-400" />
             <span className="font-semibold">
-              {property.rating?.toFixed(1) || 'New'}
+              {averageRating || 'New'}
             </span>
             <span>({reviews.length} reviews)</span>
           </div>
@@ -199,7 +290,9 @@ const PropertyDetails = () => {
           {/* Description */}
           <div className="border-b pb-6 mb-6">
             <h2 className="text-2xl font-bold mb-4">About this place</h2>
-            <p className="text-gray-700 leading-relaxed">{property.description}</p>
+            <p className="text-gray-700 leading-relaxed">
+              {property.description}
+            </p>
           </div>
 
           {/* Amenities */}
@@ -217,10 +310,76 @@ const PropertyDetails = () => {
 
           {/* Reviews + Blind Review Form */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-2xl font-bold mb-2">
               <FaStar className="inline text-yellow-400 mr-2" />
-              {property.rating?.toFixed(1) || 'No'} • {reviews.length} reviews
+              {averageRating || 'New'} • {reviews.length} reviews
             </h2>
+
+            {/* Rating summary */}
+            {reviews.length > 0 && (
+              <div className="grid md:grid-cols-2 gap-3 mb-4 text-sm">
+                <div className="flex justify-between">
+                  <span>Cleanliness</span>
+                  <span>{avgCleanliness} · 5</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Accuracy</span>
+                  <span>{avgAccuracy} · 5</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Communication</span>
+                  <span>{avgCommunication} · 5</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Location</span>
+                  <span>{avgLocationScore} · 5</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Value</span>
+                  <span>{avgValue} · 5</span>
+                </div>
+              </div>
+            )}
+
+            {/* Sort buttons */}
+            {reviews.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
+                <span className="text-gray-600">Sort by:</span>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('newest')}
+                  className={`px-3 py-1 rounded-full border ${
+                    sortBy === 'newest'
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-800 border-gray-300'
+                  }`}
+                >
+                  Newest
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('highest')}
+                  className={`px-3 py-1 rounded-full border ${
+                    sortBy === 'highest'
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-800 border-gray-300'
+                  }`}
+                >
+                  Highest rating
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('lowest')}
+                  className={`px-3 py-1 rounded-full border ${
+                    sortBy === 'lowest'
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-800 border-gray-300'
+                  }`}
+                >
+                  Lowest rating
+                </button>
+              </div>
+            )}
 
             {/* Leave a review button */}
             <button
@@ -241,12 +400,118 @@ const PropertyDetails = () => {
                       type="button"
                       onClick={() => setNewRating(star)}
                       className={`text-2xl ${
-                        star <= newRating ? 'text-yellow-400' : 'text-gray-300'
+                        star <= newRating
+                          ? 'text-yellow-400'
+                          : 'text-gray-300'
                       }`}
                     >
                       ★
                     </button>
                   ))}
+                </div>
+
+                {/* Category selects + hints */}
+                <div className="grid md:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <label className="block font-medium mb-1">
+                      Cleanliness
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Was the place clean and tidy?
+                    </p>
+                    <select
+                      value={cleanliness}
+                      onChange={(e) => setCleanliness(Number(e.target.value))}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value={0}>Select</option>
+                      {[1, 2, 3, 4, 5].map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">
+                      Accuracy
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Did the listing match the photos and description?
+                    </p>
+                    <select
+                      value={accuracy}
+                      onChange={(e) => setAccuracy(Number(e.target.value))}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value={0}>Select</option>
+                      {[1, 2, 3, 4, 5].map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">
+                      Communication
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Was the host responsive and helpful?
+                    </p>
+                    <select
+                      value={communication}
+                      onChange={(e) =>
+                        setCommunication(Number(e.target.value))
+                      }
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value={0}>Select</option>
+                      {[1, 2, 3, 4, 5].map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Location</label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Was the area convenient and as expected?
+                    </p>
+                    <select
+                      value={locationScore}
+                      onChange={(e) =>
+                        setLocationScore(Number(e.target.value))
+                      }
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value={0}>Select</option>
+                      {[1, 2, 3, 4, 5].map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-medium mb-1">Value</label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Did the stay feel worth the price?
+                    </p>
+                    <select
+                      value={valueScore}
+                      onChange={(e) => setValueScore(Number(e.target.value))}
+                      className="w-full border rounded px-2 py-1"
+                    >
+                      <option value={0}>Select</option>
+                      {[1, 2, 3, 4, 5].map((v) => (
+                        <option key={v} value={v}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <textarea
@@ -264,6 +529,11 @@ const PropertyDetails = () => {
                       setShowReviewForm(false);
                       setNewRating(0);
                       setNewComment('');
+                      setCleanliness(0);
+                      setAccuracy(0);
+                      setCommunication(0);
+                      setLocationScore(0);
+                      setValueScore(0);
                     }}
                     className="px-4 py-2 text-sm border rounded-lg"
                   >
@@ -271,23 +541,17 @@ const PropertyDetails = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!newRating || !newComment.trim()) return;
-
-                      const review = {
-                        _id: Date.now().toString(),
-                        rating: newRating,
-                        comment: newComment.trim(),
-                        createdAt: new Date().toISOString(),
-                      };
-
-                      setReviews((prev) => [review, ...prev]);
-                      setNewRating(0);
-                      setNewComment('');
-                      setShowReviewForm(false);
-                      // later: call reviewAPI.create(id, { rating: newRating, comment: newComment })
-                    }}
-                    className="px-4 py-2 text-sm bg-primary text-white rounded-lg"
+                    onClick={handleSubmitReview}
+                    className="px-4 py-2 text-sm bg-primary text-white rounded-lg disabled:opacity-60"
+                    disabled={
+                      !newRating ||
+                      !newComment.trim() ||
+                      !cleanliness ||
+                      !accuracy ||
+                      !communication ||
+                      !locationScore ||
+                      !valueScore
+                    }
                   >
                     Submit
                   </button>
@@ -297,7 +561,7 @@ const PropertyDetails = () => {
 
             {/* Existing reviews list */}
             <div className="grid md:grid-cols-2 gap-6">
-              {reviews.slice(0, 6).map((review) => (
+              {sortedReviews.slice(0, 6).map((review) => (
                 <ReviewCard key={review._id} review={review} />
               ))}
             </div>
@@ -322,7 +586,9 @@ const PropertyDetails = () => {
             {/* Date Picker */}
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="border rounded-lg p-3">
-                <label className="text-xs font-semibold uppercase">Check-in</label>
+                <label className="text-xs font-semibold uppercase">
+                  Check-in
+                </label>
                 <DatePicker
                   selected={checkIn}
                   onChange={(date) => setCheckIn(date)}

@@ -61,9 +61,18 @@ export const paymentAPI = {
 
 // Review APIs
 export const reviewAPI = {
-  create: (reviewData) => api.post('/reviews', reviewData),
-  getPropertyReviews: (propertyId) => api.get(`/reviews/property/${propertyId}`),
-  canReview: (bookingId) => api.get(`/reviews/can-review/${bookingId}`),
+  getPropertyReviews: (propertyId) =>
+    api.get(`/properties/${propertyId}/reviews`),
+
+  create: (propertyId, data) =>
+    api.post(`/properties/${propertyId}/reviews`, data),
+
+
+
+  // keep for later if you add this route
+  canReview: (bookingId) =>
+    api.get(`/reviews/can-review/${bookingId}`),
 };
+
 
 export default api;
