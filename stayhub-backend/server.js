@@ -2,6 +2,9 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const reviewRoutes = require('./routes/reviewRoutes');
+
 
 dotenv.config();
 
@@ -10,8 +13,17 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api', reviewRoutes);
 
-// 10 beachfront properties
+
+// connect to local MongoDB (Compass)
+mongoose
+  
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('Mongo connection error:', err));
+
+// 10 beachfront properties (still in-memory for now)
 const properties = [
   {
     _id: '1',
@@ -25,8 +37,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach1.jpg',
       'http://localhost:3000/images/beach1.1.jpg',
-      'http://localhost:3000/images/gym1.jpg'
-    ]
+      'http://localhost:3000/images/gym1.jpg',
+    ],
   },
   {
     _id: '2',
@@ -40,8 +52,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach2.jpg',
       'http://localhost:3000/images/beach2.2.jpg',
-      'http://localhost:3000/images/gym2.jpg'
-    ]
+      'http://localhost:3000/images/gym2.jpg',
+    ],
   },
   {
     _id: '3',
@@ -55,8 +67,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach3.jpg',
       'http://localhost:3000/images/beach3.3.jpg',
-      'http://localhost:3000/images/gym3.jpg'
-    ]
+      'http://localhost:3000/images/gym3.jpg',
+    ],
   },
   {
     _id: '4',
@@ -70,8 +82,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach4.jpg',
       'http://localhost:3000/images/beach4.4.jpg',
-      'http://localhost:3000/images/gym4.jpg'
-    ]
+      'http://localhost:3000/images/gym4.jpg',
+    ],
   },
   {
     _id: '5',
@@ -85,8 +97,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach5.jpg',
       'http://localhost:3000/images/beach5.5.jpg',
-      'http://localhost:3000/images/gym5.jpg'
-    ]
+      'http://localhost:3000/images/gym5.jpg',
+    ],
   },
   {
     _id: '6',
@@ -100,8 +112,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach6.jpg',
       'http://localhost:3000/images/beach6.6.jpg',
-      'http://localhost:3000/images/gym1.jpg'
-    ]
+      'http://localhost:3000/images/gym1.jpg',
+    ],
   },
   {
     _id: '7',
@@ -115,8 +127,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach7.jpg',
       'http://localhost:3000/images/beach7.7.jpg',
-      'http://localhost:3000/images/gym2.jpg'
-    ]
+      'http://localhost:3000/images/gym2.jpg',
+    ],
   },
   {
     _id: '8',
@@ -130,8 +142,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach8.jpg',
       'http://localhost:3000/images/beach8.8.jpg',
-      'http://localhost:3000/images/gym3.jpg'
-    ]
+      'http://localhost:3000/images/gym3.jpg',
+    ],
   },
   {
     _id: '9',
@@ -145,8 +157,8 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach9.jpg',
       'http://localhost:3000/images/beach9.9.jpg',
-      'http://localhost:3000/images/gym1.jpg'
-    ]
+      'http://localhost:3000/images/gym1.jpg',
+    ],
   },
   {
     _id: '10',
@@ -160,9 +172,9 @@ const properties = [
     images: [
       'http://localhost:3000/images/beach10.jpg',
       'http://localhost:3000/images/beach10.10.jpg',
-      'http://localhost:3000/images/gym2.jpg'
-    ]
-  }
+      'http://localhost:3000/images/gym2.jpg',
+    ],
+  },
 ];
 
 // routes

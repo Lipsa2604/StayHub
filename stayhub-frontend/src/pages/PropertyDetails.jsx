@@ -4,16 +4,18 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { propertyAPI, bookingAPI, reviewAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { FaStar, FaMapMarkerAlt, FaWifi, FaParking, FaSwimmingPool } from 'react-icons/fa';
+import { FaStar, FaMapMarkerAlt } from 'react-icons/fa';
 import ReviewCard from '../components/ReviewCard';
 
 const PropertyDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const [property, setProperty] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
   const [guests, setGuests] = useState(1);
@@ -21,9 +23,15 @@ const PropertyDetails = () => {
   const [blockedDates, setBlockedDates] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // blind review state
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(0);
+  const [newComment, setNewComment] = useState('');
+
   useEffect(() => {
     fetchPropertyDetails();
     fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
@@ -31,6 +39,7 @@ const PropertyDetails = () => {
       checkAvailability();
       calculatePrice();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkIn, checkOut]);
 
   const fetchPropertyDetails = async () => {
@@ -121,9 +130,10 @@ const PropertyDetails = () => {
     );
   }
 
-  const days = checkIn && checkOut 
-    ? Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
-    : 0;
+  const days =
+    checkIn && checkOut
+      ? Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24))
+      : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -133,7 +143,9 @@ const PropertyDetails = () => {
         <div className="flex flex-wrap items-center gap-4 text-gray-600">
           <div className="flex items-center gap-1">
             <FaStar className="text-yellow-400" />
-            <span className="font-semibold">{property.rating?.toFixed(1) || 'New'}</span>
+            <span className="font-semibold">
+              {property.rating?.toFixed(1) || 'New'}
+            </span>
             <span>({reviews.length} reviews)</span>
           </div>
           <div className="flex items-center gap-1">
@@ -154,7 +166,11 @@ const PropertyDetails = () => {
         </div>
         {property.images?.slice(1, 5).map((img, index) => (
           <div key={index}>
-            <img src={img} alt={`${property.title} ${index + 2}`} className="w-full h-full object-cover" />
+            <img
+              src={img}
+              alt={`${property.title} ${index + 2}`}
+              className="w-full h-full object-cover"
+            />
           </div>
         ))}
       </div>
@@ -169,9 +185,12 @@ const PropertyDetails = () => {
                 {property.host?.name?.[0] || 'H'}
               </div>
               <div>
-                <h2 className="text-xl font-bold">Hosted by {property.host?.name || 'Host'}</h2>
+                <h2 className="text-xl font-bold">
+                  Hosted by {property.host?.name || 'Host'}
+                </h2>
                 <p className="text-gray-600">
-                  {property.guests} guests • {property.bedrooms} bedrooms • {property.bathrooms} bathrooms
+                  {property.guests} guests • {property.bedrooms} bedrooms •{' '}
+                  {property.bathrooms} bathrooms
                 </p>
               </div>
             </div>
@@ -196,12 +215,87 @@ const PropertyDetails = () => {
             </div>
           </div>
 
-          {/* Reviews */}
+          {/* Reviews + Blind Review Form */}
           <div className="mb-6">
-            <h2 className="text-2xl font-bold mb-6">
+            <h2 className="text-2xl font-bold mb-4">
               <FaStar className="inline text-yellow-400 mr-2" />
               {property.rating?.toFixed(1) || 'No'} • {reviews.length} reviews
             </h2>
+
+            {/* Leave a review button */}
+            <button
+              onClick={() => setShowReviewForm(true)}
+              className="mb-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold"
+            >
+              Leave a Review
+            </button>
+
+            {/* Blind review form */}
+            {showReviewForm && (
+              <div className="mb-6 border rounded-xl p-4 bg-white shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Your rating:</span>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewRating(star)}
+                      className={`text-2xl ${
+                        star <= newRating ? 'text-yellow-400' : 'text-gray-300'
+                      }`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Share your experience (your name will not be shown)..."
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  rows={3}
+                />
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReviewForm(false);
+                      setNewRating(0);
+                      setNewComment('');
+                    }}
+                    className="px-4 py-2 text-sm border rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newRating || !newComment.trim()) return;
+
+                      const review = {
+                        _id: Date.now().toString(),
+                        rating: newRating,
+                        comment: newComment.trim(),
+                        createdAt: new Date().toISOString(),
+                      };
+
+                      setReviews((prev) => [review, ...prev]);
+                      setNewRating(0);
+                      setNewComment('');
+                      setShowReviewForm(false);
+                      // later: call reviewAPI.create(id, { rating: newRating, comment: newComment })
+                    }}
+                    className="px-4 py-2 text-sm bg-primary text-white rounded-lg"
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Existing reviews list */}
             <div className="grid md:grid-cols-2 gap-6">
               {reviews.slice(0, 6).map((review) => (
                 <ReviewCard key={review._id} review={review} />
@@ -219,7 +313,9 @@ const PropertyDetails = () => {
         <div className="lg:col-span-1">
           <div className="sticky top-24 border border-gray-300 rounded-xl p-6 shadow-xl">
             <div className="flex items-baseline gap-2 mb-6">
-              <span className="text-3xl font-bold">${property.pricePerNight}</span>
+              <span className="text-3xl font-bold">
+                ${property.pricePerNight}
+              </span>
               <span className="text-gray-600">/ night</span>
             </div>
 
@@ -240,7 +336,9 @@ const PropertyDetails = () => {
                 />
               </div>
               <div className="border rounded-lg p-3">
-                <label className="text-xs font-semibold uppercase">Check-out</label>
+                <label className="text-xs font-semibold uppercase">
+                  Check-out
+                </label>
                 <DatePicker
                   selected={checkOut}
                   onChange={(date) => setCheckOut(date)}
@@ -257,7 +355,9 @@ const PropertyDetails = () => {
 
             {/* Guests */}
             <div className="border rounded-lg p-3 mb-6">
-              <label className="text-xs font-semibold uppercase block mb-1">Guests</label>
+              <label className="text-xs font-semibold uppercase block mb-1">
+                Guests
+              </label>
               <select
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
@@ -273,13 +373,15 @@ const PropertyDetails = () => {
 
             {/* Availability Status */}
             {checkIn && checkOut && (
-              <div className={`mb-4 p-3 rounded-lg ${
-                isAvailable 
-                  ? 'bg-green-50 text-green-800 border border-green-200' 
-                  : 'bg-red-50 text-red-800 border border-red-200'
-              }`}>
-                {isAvailable 
-                  ? '✓ Available for selected dates' 
+              <div
+                className={`mb-4 p-3 rounded-lg ${
+                  isAvailable
+                    ? 'bg-green-50 text-green-800 border border-green-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}
+              >
+                {isAvailable
+                  ? '✓ Available for selected dates'
                   : '✗ Not available - choose different dates'}
               </div>
             )}
@@ -288,12 +390,16 @@ const PropertyDetails = () => {
             {checkIn && checkOut && days > 0 && (
               <div className="mb-6 space-y-3">
                 <div className="flex justify-between">
-                  <span className="underline">${property.pricePerNight} × {days} nights</span>
+                  <span className="underline">
+                    ${property.pricePerNight} × {days} nights
+                  </span>
                   <span>${property.pricePerNight * days}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="underline">Service fee</span>
-                  <span>${(property.pricePerNight * days * 0.1).toFixed(2)}</span>
+                  <span>
+                    ${(property.pricePerNight * days * 0.1).toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="underline">Cleaning fee</span>
@@ -316,7 +422,11 @@ const PropertyDetails = () => {
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
             >
-              {!user ? 'Login to Book' : checkIn && checkOut ? 'Reserve' : 'Select Dates'}
+              {!user
+                ? 'Login to Book'
+                : checkIn && checkOut
+                ? 'Reserve'
+                : 'Select Dates'}
             </button>
 
             <p className="text-center text-sm text-gray-600 mt-4">
