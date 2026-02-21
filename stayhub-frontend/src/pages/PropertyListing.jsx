@@ -36,7 +36,7 @@ const PropertyListing = () => {
 
   const handleAISearch = async () => {
     if (!aiSearch.trim()) return;
-    
+
     try {
       setLoading(true);
       const response = await propertyAPI.searchWithAI(aiSearch);
@@ -114,7 +114,12 @@ const PropertyListing = () => {
             <div className="bg-white w-full rounded-t-3xl max-h-[80vh] overflow-y-auto p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Filters</h2>
-                <button onClick={() => setShowFilters(false)} className="text-2xl">×</button>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="text-2xl"
+                >
+                  ×
+                </button>
               </div>
               <FilterSidebar
                 filters={filters}
@@ -145,7 +150,10 @@ const PropertyListing = () => {
           ) : properties.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-2xl text-gray-500">No properties found</p>
-              <button onClick={clearFilters} className="mt-4 text-primary underline">
+              <button
+                onClick={clearFilters}
+                className="mt-4 text-primary underline"
+              >
                 Clear all filters
               </button>
             </div>
